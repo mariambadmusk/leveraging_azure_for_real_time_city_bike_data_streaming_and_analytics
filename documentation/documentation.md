@@ -1,26 +1,66 @@
 # Revision History
 
-| Version |       Author       |     Date     |           Description             |
-| ------- | ------------------ | ------------ | --------------------------------- |
-|         |                    |              |                                   |
+| Version |       Author       |     Date     |            Description                |
+| ------- | ------------------ | ------------ | ------------------------------------- |
+|   1.0   |   Mariam Badmus    |  12-04-2025  |     Updated the project section       |
 
 # Project Title
 
 ## Project Goals
-  - Describe the main purpose and objectives of this project.
+A automated scalable ETL pipline on that uses the power of Azure cloud to integrate New York City's transport, weather, and traffic data to provide actionable insights on bus performance, delays, and route efficiency in New York City. The project goal is to support smarter transportation planning, improve commuting efficiency, and enable real-time data-driven decisions. 
+
+
   Stakeholders 
   
-  | name            |       role       |     GitHub Profile    |      
-  | --------------  | ---------------- | ------------------    | 
-  |                 |                  |                       |  
+  |       name        |       role       |     GitHub Profile    |      
+  | ----------------- | ---------------- | ------------------    | 
+  |   Mariam Badmus   |                  |    mariambadmusk      |  
   
 ## Project Output
 ## Project Plan
+  Phase 1: Requirement Gathering
+  * Choose APIs: MTA Bus Time API, 511NY Traffic API, Weather API
+  * Design Data Schema and Architecture
+    
+  Phase 2: Data Ingestion
+  * Extract Data from:
+    * MTA Bus Time API
+    * 511Ny Traffic API
+    * Weather API
+  * Unit Tests:
+    * Validate each API response and schemas
+    * 
+  * Integeration Tests
+
+ Phase 3: Data Transformation
+* Use Azure Databricks (PySpark) to:
+   * Clean and transform data
+   * Select and merge data
+   * Create aggregated data
+
+ Phase 4: Data Loading
+ * Load transformed data to:
+   * Azure Synapse Analytics
+  
+ Phase 5: Data Orchestration
+ Phase 6: Data Testing & Validation
+  
 ## Project Success Criteria 
+ - Data Freshness
+ - Scalability
+ - Automation
+ - Monitoring & Logging
+ - Documentation
+
 ## Requirements
   - technical requirements? like system requirement etc
+  - 
 ## Technology Stack
-  - tools, cloud services used?
+  - Azure Event Hub
+  - Azure Synapse Analytics/Azure Postgresql
+  - Azure Managed Airflow
+  - Azure Databricks
+    
 ## Data Architecture Diagram
 ## Data Workflow Diagram
     
