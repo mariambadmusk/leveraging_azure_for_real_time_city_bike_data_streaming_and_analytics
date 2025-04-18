@@ -4,7 +4,7 @@ import requests
 import os
 
 
-logger = config_logger("extract_and_stream_networks")
+logger = config_logging("extract_and_stream_networks")
 
 
 def extract_bike_networks(url) -> None:
@@ -27,7 +27,7 @@ def extract_bike_networks(url) -> None:
         return None
 
 
-def transform_data(data: dict, spark) -> DataFrame:
+def transform_data(data: dict) -> DataFrame:
     """ Transform the schema of the data """
     try:
         all_network_ids = []
@@ -50,9 +50,20 @@ def transform_data(data: dict, spark) -> DataFrame:
 
                 all_network_ids.append(network.get("id"))
                 all_networks.append(streaming_data)
-        
-                
-                
+    
+
+        logger.info("Data transformed successfully.")
+
+        return all_networks, all_network_ids
+
+    except Exception as e:
+        logger.error(f"Error transforming schema: {e}")
+        return None
+
+
+def create_dataframe(data):
+    """"""
+    try:
         schema = StructType([
             StructField("id", StringType(), True),
             StructField("name", StringType(), True),
@@ -64,18 +75,19 @@ def transform_data(data: dict, spark) -> DataFrame:
             ])
         
         df = spark.createDataFrame(data, schema=schema)
-
-        logger.info("Data transformed successfully.")
-
-        return df, all_network_ids
-
+        logger.info("df created sucessfully")
+        return df
     except Exception as e:
         logger.error(f"Error transforming schema: {e}")
         return None
+          
 
-# function to clean bike network data
-def clean_network_data(df):
+
+def clean_network_data(df: DataFrame) -> DataFrame:
+    """Clean bike network data"""
+    
     df = df.na.drop(subset=["id"])
+    
     # recall
     lat_min, lat_max = coordinates["lat_min"], coordinates["lat_max"]
     lon_min, lon_max = coordinates["lon_min"], coordinates["lon_max"]
@@ -95,13 +107,14 @@ def network_main():
         spark = intialise_spark_session(app_name)
         data = extract_bike_networks(url)
 
-        df, all_network_ids = transform_data(data, spark)
-        clean_network_df(df)
+        all_networks, all_network_ids = transform_data(data)
+        df = create_dataframe(all_networks)
+        cleaned_df = clean_network_df(df)
+        
         spark.write.csv(all_network_ids, "reference_data/bike_networks.csv", header=True)
 
-
         # Write to database
-        write_to_database(df, topic, "overwrite", jbdc_url)
+        write_to_database(cleaned_df, topic, "overwrite", jbdc_url)
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
