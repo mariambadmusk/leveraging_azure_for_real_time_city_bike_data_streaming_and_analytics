@@ -1,18 +1,17 @@
-from utils import config_logging, configure_kafka_producer, intialise_spark_session
-from pyspark.sql.functions import from_json, col
+from utils import config_logging, configure_kafka_producer, intialise_spark_session, write_to_database, read_and_transform_kafka_stream 
 from pyspark.sql.types import StructType, StructField, StringType, FloatType, IntegerType
-import requests
+import os
 import logging
 import json
 import asyncio
-import aiofiles
-import aiohttps
-import time
-import csv
+import aiohttp
+import asyncio
+import json
 import os
 
 
-logging = config_logging()
+
+logging = config_logging("extract_and_stream_stations")
 
 
 
@@ -75,7 +74,7 @@ async def fetch_all_stations(producer: str, topic: str) -> None:
 
             for stations in tasks_stations:
                 streaming_data = ({
-                    "id": response.get("network", {}).get("id"),
+                    "network_id": response.get("network", {}).get("id"),
                     "station_id": stations["id"],
                     "name": stations["name"],
                     "latitude": stations["latitude"],
@@ -92,10 +91,8 @@ async def fetch_all_stations(producer: str, topic: str) -> None:
                     "normal_bikes": stations["extra"].get("normal_bikes", 0),
                     "number": stations["extra"].get("number", 0),
                     "slots": stations["extra"].get("slots", 0),
-                    "current_timestamp": time.time()             #insert runtime timestamp
                 })
-
-                    
+                
                 producer.send(topic, value=json.dumps(streaming_data).encode('utf-8'))
                 producer.flush()
                         
@@ -112,7 +109,7 @@ def transform_schema():
     """ Transform schema for bike networks """
 
     schema = StructType([
-        StructField("id", StringType(), True),
+        StructField("network_id", StringType(), True),
         StructField("station_id", StringType(), True),
         StructField("name", StringType(), True),
         StructField("latitude", FloatType(), True),
@@ -128,40 +125,27 @@ def transform_schema():
         StructField("ebikes", IntegerType(), True),
         StructField("normal_bikes", IntegerType(), True),
         StructField("number", IntegerType(), True),
-        StructField("slots", IntegerType(), True),
-        StructField("current_timestamp", StringType(), True)
+        StructField("slots", IntegerType(), True)
     ])
-
+    
     return schema
 
 
-def consume_kafka_stream(spark, bootstrap_servers, topic):
-    try:
-        df = spark.readStream.format("kafka") \
-            .option("kafka.bootstrap.servers", bootstrap_servers) \
-            .option("subscribe", topic) \
-            .option("delimiter", ",")\
-            .load()
-        logging.info("Data consumed successfully.")
 
-        transformed_df = df.selectExpr("CAST(value AS STRING)")\
-        .select(from_json(col("value", transform_schema)\
-        .alias("data")))\
-        .select("data.*")
-
-        return transformed_df
-
-    except Exception as e:
-        logging.error(f"Error consuming data: {e}")
-        return None
     
    
-def main():
+def station_main():
     try:
-        spark = intialise_spark_session()
+        app_name = "fetchAndConsumeStationsApi"
         bootstrap_servers = "KAFKA_BROKERS"
-        producer  = configure_kafka_producer(bootstrap_servers)
         topic = "stations-feed-stream"
+        schema = transform_schema()
+        jbdc_url = os.getenv("JDBC_URL")
+
+
+        spark = intialise_spark_session(app_name)
+        producer  = configure_kafka_producer(bootstrap_servers)
+        schema = transform_schema()
 
         if not spark or bootstrap_servers or producer or topic:
             logging.error("Missing variable configuration: check your configuration.")
@@ -169,9 +153,9 @@ def main():
 
         asyncio.run(fetch_all_stations(producer, topic))
         
-        transformed_df = consume_kafka_stream(spark, bootstrap_servers, topic)
+        transformed_df = read_and_transform_kafka_stream(spark, schema, bootstrap_servers, topic)
 
-        write_to_db(transformed_df, "stations", "append")
+        write_to_database(transformed_df, "stations", "append", jbdc_url)
 
 
 
@@ -185,6 +169,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    station_main()
 
 

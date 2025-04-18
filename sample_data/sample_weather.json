@@ -1,0 +1,29 @@
+{
+    "location": {
+        "name": "Bagotville",
+        "region": "Quebec",
+        "country": "Canada",
+        "lat": 48.35,
+        "lon": -70.883,
+        "tz_id": "America/Toronto",
+        "localtime_epoch": 1744874327,
+        "localtime": "2025-04-17 03:18"
+    },
+    "current": {
+        "last_updated": "2025-04-17 03:15",
+        "temp_c": -0.9,
+        "is_day": 0,
+        "condition": {
+            "text": "Clear"
+        },
+        "wind_mph": 15.2,
+        "wind_degree": 281,
+        "wind_dir": "WNW",
+        "humidity": 81,
+        "cloud": 0,
+        "feelslike_c": -7.0,
+        "heatindex_c": -2.6,
+        "heatindex_f": 27.3,
+        "uv": 0.0
+    }
+}

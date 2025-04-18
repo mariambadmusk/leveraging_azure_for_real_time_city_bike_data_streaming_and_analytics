@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "leveraging-azure-for-real-time-city-bike-data-streaming-and-analytics"
+version = "0.1.0"
+description = "for a real-time etl of city bike data of bike sharing networks in the US"
+authors = ["mariambadmusk <mbadmusk@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pyspark = "^3.5.5"
+requests = "^2.32.3"
+aiohttp = "^3.11.16"
+asyncio = "^3.4.3"
+pandas = "^2.2.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
