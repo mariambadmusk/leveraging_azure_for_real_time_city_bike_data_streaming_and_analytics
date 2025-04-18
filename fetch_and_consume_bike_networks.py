@@ -1,11 +1,10 @@
 from utils import config_logging, intialise_spark_session,  write_to_database
 from pyspark.sql.types import StructType, StructField, StringType, FloatType
 import requests
-import logging
 import os
 
 
-logging = config_logging("extract_and_stream_networks")
+logger = config_logger("extract_and_stream_networks")
 
 
 def extract_bike_networks(url) -> None:
@@ -15,16 +14,16 @@ def extract_bike_networks(url) -> None:
         response = requests.get(url)
 
         if response.status_code == 200:
-            logging.info("Data fetched successfully.")
+            logger.info("Data fetched successfully.")
             data = response.json()
             
             return data
         else:
-            logging.error(f"Error fetching data: {response.status_code}")
+            logger.error(f"Error fetching data: {response.status_code}")
             return None
 
     except requests.exceptions.RequestException as e:
-        logging.error(f"Error fetching data: {e}")
+        logger.error(f"Error fetching data: {e}")
         return None
 
 
@@ -66,16 +65,23 @@ def transform_data(data: dict, spark) -> DataFrame:
         
         df = spark.createDataFrame(data, schema=schema)
 
-        logging.info("Data transformed successfully.")
+        logger.info("Data transformed successfully.")
 
         return df, all_network_ids
 
     except Exception as e:
-        logging.error(f"Error transforming schema: {e}")
+        logger.error(f"Error transforming schema: {e}")
         return None
 
+# function to clean bike network data
+def clean_network_data(df):
+    df = df.na.drop(subset=["id"])
+    # recall
+    lat_min, lat_max = coordinates["lat_min"], coordinates["lat_max"]
+    lon_min, lon_max = coordinates["lon_min"], coordinates["lon_max"]
 
-
+    return df.filter(col("latitude").between(lat_min, lat_max) & col("longitude").between(lon_min, lon_max)) \
+             .dropDuplicates(["id"])
 
     
    
@@ -90,6 +96,7 @@ def network_main():
         data = extract_bike_networks(url)
 
         df, all_network_ids = transform_data(data, spark)
+        clean_network_df(df)
         spark.write.csv(all_network_ids, "reference_data/bike_networks.csv", header=True)
 
 
@@ -97,10 +104,10 @@ def network_main():
         write_to_database(df, topic, "overwrite", jbdc_url)
 
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        logger.error(f"An error occurred: {e}")
     finally:
         spark.stop()
-        logging.info("Spark session stopped.")
+        logger.info("Spark session stopped.")
 
 
 if __name__ == "__main__":
