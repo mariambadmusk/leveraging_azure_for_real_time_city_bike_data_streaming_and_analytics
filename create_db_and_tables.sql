@@ -77,4 +77,71 @@ CREATE TABLE IF NOT EXISTS bike_networks_monitor.dim_city(
 
 
 
+-- create dimension table for bike networks
+CREATE TABLE IF NOT EXISTS dim_network (
+    network_id VARCHAR PRIMARY KEY,
+    name VARCHAR,
+    latitude FLOAT,
+    longitude FLOAT,
+    city VARCHAR,
+    country VARCHAR,
+    company VARCHAR
+);
+
+-- create dimension table for bike stations
+CREATE TABLE IF NOT EXISTS dim_station (
+    station_id VARCHAR PRIMARY KEY,
+    network_id VARCHAR REFERENCES dim_network(network_id),
+    name VARCHAR,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    uid VARCHAR,
+    address VARCHAR,
+    number INT
+);
+
+-- create dimension table for time
+CREATE TABLE IF NOT EXISTS dim_time (
+    timestamp_id TIMESTAMP PRIMARY KEY,
+    year INT,
+    month INT,
+    day INT,
+    hour INT,
+    minute INT,
+    second INT
+);
+
+-- create fact table
+CREATE TABLE IF NOT EXISTS station_status (
+    station_id VARCHAR REFERENCES dim_station(station_id),
+    network_id VARCHAR REFERENCES dim_network(network_id),
+    timestamp_id TIMESTAMP REFERENCES dim_time(timestamp_id),
+    free_bikes INT,
+    empty_slots INT,
+    renting INT,
+    returning INT,
+    ebikes INT,
+    normal_bikes INT,
+    slots INT,
+    -- creating a composite primary key
+    PRIMARY KEY (station_id, timestamp_id)
+);
+
+-- create staging fact table for upserts(to ensure idempotency)
+CREATE TABLE IF NOT EXISTS stg_station_status (
+    station_id VARCHAR,
+    network_id VARCHAR,
+    timestamp_id TIMESTAMP,
+    free_bikes INT,
+    empty_slots INT,
+    renting INT,
+    returning INT,
+    ebikes INT,
+    normal_bikes INT,
+    slots INT
+);
+
+-- learn about creating indexes for query performance optimization
+
+
 
