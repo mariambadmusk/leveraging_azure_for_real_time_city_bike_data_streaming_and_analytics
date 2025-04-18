@@ -6,6 +6,10 @@ import os
 
 logger = config_logging("extract_and_stream_networks")
 
+coordinates = {
+        "lat_min": -90, "lat_max": 90,
+        "lon_min": -180, "lon_max": 180
+    }
 
 def extract_bike_networks(url) -> None:
 
