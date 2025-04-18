@@ -117,7 +117,7 @@ def network_main():
         spark.write.csv(all_network_ids, "reference_data/bike_networks.csv", header=True)
 
         # Write to database
-        write_to_database(cleaned_df, topic, "overwrite", jbdc_url)
+        write_to_database(cleaned_df, table, "overwrite", jbdc_url)
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
