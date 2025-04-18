@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS bike_networks_monitor.staging_station_status(
 
 -- The following table is used to store the time dimension 
 -- dim_time
-CREATE TABLE IF NOT EXISTS  bike_networks_monitor.dim_time(
+CREATE TABLE IF NOT EXISTS bike_networks_monitor.dim_time(
     "timestamp_id" TIMESTAMP PRIMARY KEY,
     "year" INT,
     "month" INT,
