@@ -86,7 +86,7 @@ def create_dataframe(data):
         return None
           
 
-
+# models
 def clean_network_data(df: DataFrame) -> DataFrame:
     """Clean bike network data"""
     
@@ -99,7 +99,39 @@ def clean_network_data(df: DataFrame) -> DataFrame:
     return df.filter(col("latitude").between(lat_min, lat_max) & col("longitude").between(lon_min, lon_max)) \
              .dropDuplicates(["id"])
 
-    
+ def create_star_schema_tables(station_df, network_df):
+    dim_station = station_df.select(
+        col("id").alias("network_id"),
+        "station_id", col("name").alias("station_name"),
+        "latitude", "longitude", "address", "uid",
+        "has_ebikes", "number", "slots"
+    )
+
+    dim_network = network_df.select(
+        col("id").alias("network_id"),
+        col("name").alias("network_name"),
+        "latitude", "longitude", "city", "country"
+    )
+
+    dim_time = station_df.select(to_timestamp("current_timestamp").alias("current_timestamp")) \
+        .withColumn("timestamp_id", unix_timestamp("current_timestamp")) \
+        .withColumn("date", date_format("current_timestamp", "yyyy-MM-dd")) \
+        .withColumn("day", date_format("current_timestamp", "d").cast("int")) \
+        .withColumn("month", date_format("current_timestamp", "M").cast("int")) \
+        .withColumn("year", date_format("current_timestamp", "yyyy").cast("int")) \
+        .withColumn("hour", date_format("current_timestamp", "H").cast("int")) \
+        .withColumn("minute", date_format("current_timestamp", "m").cast("int")) \
+        .withColumn("day_of_week", date_format("current_timestamp", "u").cast("int")) \
+        .dropDuplicates(["timestamp_id"])
+
+    fact_station = station_df.select(
+        "station_id", col("id").alias("network_id"),
+        unix_timestamp(to_timestamp("current_timestamp")).alias("timestamp_id"),
+        "free_bikes", "empty_slots", "renting",
+        "returning", "ebikes", "normal_bikes", "slots"
+    )
+
+    return dim_station, dim_network, dim_time, fact_station   
    
 def network_main():
     try:
