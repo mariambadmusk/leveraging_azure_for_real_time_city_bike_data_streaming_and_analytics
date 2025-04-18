@@ -43,7 +43,6 @@ async def fetch_all_weather(api_key: str, city_list: list, producer: str, topic:
 
                     if location_data and current:
                         streaming_data = {
-                            "timezone": location_data.get("tz_id"),
                             "country": location_data.get("country"),
                             "last_updated": current.get("last_updated"),
                             "localtime": location_data.get("localtime"),
@@ -73,7 +72,6 @@ def transform_schema():
     """ Transfroms schema for the weather data"""
 
     schema =  StructType([
-        StructField("timezone", StringType(), True),
         StructField("country", StringType(), True),
         StructField("last_updated", StringType(), True),
         StructField("localtime", StringType(), True),
