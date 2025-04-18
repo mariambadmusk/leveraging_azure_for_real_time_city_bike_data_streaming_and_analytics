@@ -68,8 +68,6 @@ CREATE TABLE IF NOT EXISTS bike_networks_monitor.dim_bike_stations(
     "station_id" VARCHAR(255) PRIMARY KEY,
     "network_id" VARCHAR(255) REFERENCES bike_networks_monitor.dim_bike_networks("network_id")
     "name" VARCHAR(255),
-    "city" VARCHAR(255),
-    "country" VARCHAR(255),
     "latitude" DOUBLE PRECISION,
     "longitude" DOUBLE PRECISION,
     "uid" VARCHAR(255),
@@ -92,7 +90,7 @@ CREATE TABLE IF NOT EXIST bike_networks_monitor.fact_weather(
     "wind_dir" VARCHAR (255),
     "humidity" INTEGER,
     "cloud" INTEGER
-    FOREIGN KEY (city) REFERENCES bike_networks_monitor.dim_bike_stations(city)
+    FOREIGN KEY (city) REFERENCES bike_networks_monitor.dim_bike_networks(city)
 );
 
 
