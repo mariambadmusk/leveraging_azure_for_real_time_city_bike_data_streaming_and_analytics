@@ -100,8 +100,7 @@ CREATE TABLE IF NOT EXISTS bike_networks_monitor.dim_city
     "city" VARCHAR(255) PRIMARY KEY,
     "country" VARCHAR(255),
     "latitude" FLOAT,
-    "longitude" FLOAT,
-    "timezone" VARCHAR(255)
+    "longitude" FLOAT
     );
 
 
