@@ -12,7 +12,7 @@ def create_tables():
         db_connection = os.getenv("SQL_CONN_URL")
         engine = create_engine(db_connection)
 
-        sql_path = "/Workspace/Users/khadijabadmus@yahoo.com/city_weather_api/create_tables.sql"
+        sql_path = "path/to/your/sql_file.sql" 
         with open(sql_path, 'r') as sql_file:
             sql_commands = sql_file.read()
 
