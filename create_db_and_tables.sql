@@ -5,7 +5,7 @@ CREATE DATABASE IF NOT EXISTS "bike_networks_monitor";
 USE "bike_networks_monitor";
 
 -- The following table is used to store the bike networks
--- dime_bike_networks
+-- dim_bike_networks
 CREATE TABLE IF NOT EXISTS bike_networks_monitor.dim_bike_networks(
     "network_id" INT PRIMARY KEY,
     "name" VARCHAR(255),
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS bike_networks_monitor.staging_station_status(
 );
 
 -- The following table is used to store the time dimension 
--- dim_time
+-- fact_time
 CREATE TABLE IF NOT EXISTS bike_networks_monitor.fact_time(
     "timestamp_id" TIMESTAMP PRIMARY KEY,
     "year" INT,
