@@ -81,47 +81,28 @@ All the data used in this project was acquired from an open public API that prov
 - **Structure:** Hierarchical, with two main sources:
   - `networks`: Metadata about bike-sharing networks
   - `stations`: Real-time status of individual bike stations
+  - `weather`: Real-time status of weather across the cities
 
 ---
 
 #### Size of the Data
+  - `networks`: < 400 KB
+  - `stations`: < 
+  - `weather`: < 
+
 
 - **Networks**
   - Records: ~700+ networks globally (varies based on API)
-  - Fields per record: ~7 top-level fields including nested `location` and `company` arrays
-    
-  - Networks Table
-      - `id`
-      - `name`
-      - `location.latitude`
-      - `location.longitude`
-      - `location.city`
-      - `location.country`
-      - `href`
-      - `company`
-      - `gbfs_href`
+  - Fields per record: 8+ fields
+      
         
 - **Stations**
   - Records: Varies by network (for example `Accès Vélo` has ~10–100 stations)
-  - Fields per station: ~15+ fields
-
-    - Stations Table
-      - `id`
-      - `station_id`
-      - `name`
-      - `latitude`
-      - `longitude`
-      - `timestamp`
-      - `free_bikes`
-      - `empty_slots`
-      - `uid`
-      - `renting`
-      - `returning`
-      - `last_updated`
-      - `address`
-      - `has_ebikes`
-      - `ebikes`
-      - `normal_bikes`
+  - Fields per station: 18 fields
+ 
+- **Weather**
+  - Records: Varies by customised settings on the Weather API web
+  - Fields selected per query: 21 fields
 
 
 #### 📈 Aggregate Statistics (Example - )
@@ -168,15 +149,37 @@ All the data used in this project was acquired from an open public API that prov
 
 #### Completeness
 
-- **Networks Data:** Largely complete, with fields such as `id`, `name`, `location`, and `gbfs_href` consistently present.
-- **Stations Data:** Generally complete; however, some fields like `ebikes`, `normal_bikes`, or `free_bikes` may be missing or return `null` occasionally 
-    depending on the network status.
+- **Networks Data:** Complete
+- **Stations Data:** Largely complete; however, some fields like `uid`, `address`, `ebikes`, `normal_bikes`, or `free_bikes` may be missing or return `null` occasionally. This issue arises primarily because of the dynamic schema from the stations API, which may omit data that isn't available at the time of the fetch.
+- **Weather Data:** Complete
 
-#### Accuracy / Error Presence
+#### Accuracy 
 
-- **Timestamp Fields:** Timestamps are accurate and in ISO 8601 format (`UTC`), matching real-time expectations.
-- **Coordinates:** Latitude and longitude fields appear valid and consistent with actual city geography.
-- **Boolean Fields:** Fields like `renting` and `returning` correctly reflect operational status.
+- **Networks Data:** Generally accurate as fetched from a trusted source.
+- **Stations Data:** Bike and slot numbers are usually accurate but can become stale between fetch intervals.
+- **Weather Data:** Moderate accuracy; values are fetched using rounded `latitude` and `longitude values`, leading to possible inaccuracies when the city's weather differs from the station’s microclimate.
+
+
+#### Timeliness
+- **Networks Data:** Updates are infrequent but acceptable due to low volatility.
+- **Stations Data:** Fetched every 10–15 minutes. This may not always reflect real-time changes, especially during peak usage times.
+- **Weather Data:** Timeliness may be affected by API latency and update frequency, potentially showing slightly outdated conditions.
+
+#### Uniqueness
+- **Networks Data:** Unique by `network_id`; no duplication observed.
+- **Stations Data:** Composite primary key on `station_id` and `timestamp` prevents duplication. However, we do not currently check if station status has changed since the last ingestion, which may lead to storage of identical rows.
+- **Weather Data:** Same city weather may be recorded multiple times without changes due to a lack of change-detection logic.
+
+#### Conformity
+- **Networks Data:** High conformity with consistent use of naming conventions and data types.
+- **Stations Data:** Field formats (e.g., coordinates, booleans) are consistent. When missing, fields are either null or omitted, which could be filled with standard placeholders like `unknown` or `not available`.
+- **Weather Data:** Mostly conforms to schema. Field types are consistent, although some optional fields are missing depending on API response.
+
+#### Validity
+- **Networks Data:** Valid; schema constraints such as `PRIMARY KEY` and correct types are enforced.
+- **Stations Data:** Referential integrity is upheld via foreign keys. Latitude and longitude values are within acceptable ranges.
+- **Weather Data:** Fields like `temp_c`, `humidity`, and `wind_mph` fall within logical ranges. Timestamps are valid and parsable.
+  
 
 #### Missing Values
 
@@ -199,24 +202,120 @@ All the data used in this project was acquired from an open public API that prov
 - **Schema Enforcement:** Apply schema validation in PySpark to catch and fill missing fields with default values (e.g., `0` for bike counts).
 - **Null Handling:** Replace missing numerical fields with zeros and flag records for potential review.
 - **Data Cleaning:** Apply transformations to standardise formats and impute missing fields where feasible.
+
+#### Possible Solutions
+
+| Issue Identified                       | Suggested Solution                                                                  |
+|----------------------------------------|-------------------------------------------------------------------------------------|
+| Missing fields in station data         | Implement fallback values or enrichment (e.g., geocoding `address` from coordinates)|
+| Weather inaccuracy due to rounding     | Use more precise coordinates where possible, or fetch per station if feasible       |
+| Timeliness delay                       | Reduce fetch intervals or implement streaming if the API supports push updates      |
+| Lack of change-detection               | Introduce hashing or comparison logic before ingestion to prevent duplicates        |
+| Null values reducing conformity        | Use placeholders like `"unknown"` or `"not provided"` for better readability        |
+
       
-  ## Data Transformation
+## Data Transformation\Selection\Modelling
+
+
+#### Goals of Transformation & Modelling
+
+- Ensure **schema uniformity** from dynamically structured JSON
+- Maintain **data integrity** and **referential consistency**
+- Generate **dimensions** and **facts** for analytical modelling
+- Map data to a **star schema** for performance and simplicity
+
+
+#### Data Selection
+
+#### Fields Selected
+
+| Table                     | Fields Used                                                                 |
+|---------------------------|------------------------------------------------------------------------------|
+| `dim_bike_networks`       | `network_id`, `name`, `latitude`, `longitude`, `city`, `country`, `company` |
+| `dim_bike_stations`       | `station_id`, `network_id`, `name`, `city`, `country`, `latitude`, `longitude`, `uid`, `address` |
+| `fact_stations_status`    | `station_id`, `network_id`, `timestamp_id`, `free_bikes`, `empty_slots`, `ebikes`, `normal_bikes`, `renting`, `returning`, `slots` |
+| `fact_weather`            | `city`, `localtime`, `last_updated`, `condition`, `temp_c`, `feelslike_c`, `humidity`, `wind_dir`, etc. |
+| `dim_time`                | `timestamp_id`, `year`, `month`, `day`, `hour`, `minute`, `second`          |
+
+#### Relevance to Project Goals
+
+- **City**, **station**, and **network IDs** help group and segment bike availability and demand.
+- **`free_bikes`**, **`ebikes`**, and **`empty_slots`** drive operational monitoring and supply/demand forecasting.
+- **Weather features** like `humidity`, `temp_c`, and `condition` allow for correlation analysis between weather and bike usage.
+- **Timestamps** standardised via `dim_time` enable time series and trend analysis.
+
+#### Technical Constraints Considered
+
+| Constraint                 |                         Description                                         |
+|----------------------------|-----------------------------------------------------------------------------|
+| **Latency & Timeliness**   | Updated every 10–15 minutes, tolerable for near-real-time analysis          |
+| **Dynamic Schema**         | Stations API may omit fields                                                |
+| **Data Types**             | Typed explicitly in SQL (e.g., `BOOLEAN`, `INT`, `VARCHAR`) to avoid issues |
+| **Relational Mapping**     | Keys like `network_id` and `station_id` are reused across dimensions/facts  |
+
+---
+
+#### Transformation Logic by Table
+
+#### 1. `dim_bike_networks`
+
+| Raw Field          | Transformed Field | Description                           |
+|--------------------|-------------------|---------------------------------------|
+| `id`               | `network_id`      | Renamed for clarity                   |
+| `location.city`    | `city`            | Extracted from nested JSON            |
+| `company[0]`       | `company`         | Selected first listed company         |
+
+---
+
+#### 2. `dim_bike_stations`
+
+| Raw Field       | Transformed Field | Description                                       |
+|-----------------|-------------------|---------------------------------------------------|
+| `extra.uid`     | `uid`             | Extracted from nested field `extra`              |
+| `extra.address` | `address`         | May be missing; fallback applied if not present  |
+| `network`       | `network_id`      | Linked to parent network                         |
+
+---
+
+#### 3. `fact_stations_status`
+
+| Derived Field   | Logic                                                             |
+|-----------------|-------------------------------------------------------------------|
+| `normal_bikes`  | `free_bikes - ebikes`                                             |
+| `slots`         | `free_bikes + empty_slots`                                        |
+| `timestamp_id`  | Captured at ingestion time                                        |
+| `renting`, `returning` | Coerced to `BOOLEAN`, ensuring consistency                |
+
+---
+
+#### 4. `fact_weather`
+
+| Field          | Transformed From  | Description                                      |
+|----------------|-------------------|--------------------------------------------------|
+| `city`         | `location.name`   | Matched with station `city`                     |
+| `temp_c`       | `current.temp_c`  | Rounded to one decimal                          |
+| `condition`    | `current.condition.text` | Flattened from nested structure          |
+
+---
+
+#####  Transformation Flow Diagram (Text Representation)
+
+```text
+External APIs (Networks, Stations, Weather)
+          ↓
+    Raw JSON -> Staging Tables
+          ↓
+    Transformation Logic
+     - Field Selection
+     - Schema Normalisation
+     - Type Casting
+     - Enrichment & Derived Fields
+          ↓
+   Star Schema (Facts + Dimensions)
+
+```
   
-  ## Data Selection
-  * data(fields/columns) to be used
-  * relevance to project goals
-  * technical constraints like data volume and data types
 
-
-  ### Data Modeling
-  Transformation required
-  Loading the data/Data storage
-
-  ### Data Cleaning/Transformation
-  * Derived columns e.g data aggregation
-  * Data merged
-  * Data reformatted/columns reordered
-  * Data standardisation/ Data mapping (new schema design)
     
   ### Data Definition
   | Table   |      Column      | Business Description |     Data Type     |   Nullable Y/N?  |
