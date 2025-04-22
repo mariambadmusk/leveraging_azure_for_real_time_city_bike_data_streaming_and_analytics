@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "weatherapi"
+version = "0.1.0"
+description = ""
+authors = ["mariambadmusk <mbadmusk@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+azure-eventhub = "^5.15.0"
+pandas = "^2.2.3"
+asyncio = "^3.4.3"
+aiohttp = "^3.11.17"
+pyspark = "^3.5.5"
+sqlalchemy = "^2.0.40"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

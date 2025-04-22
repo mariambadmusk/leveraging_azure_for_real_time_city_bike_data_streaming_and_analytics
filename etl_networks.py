@@ -1,17 +1,18 @@
-from utils import config_logging, intialise_spark_session
+
 from pyspark.sql.types import StructType, StructField, StringType, FloatType
 import requests
 import logging
+import sys
 import os
+sys.path.append(os.path.abspath("scripts"))
+from scripts.utils import config_logging, intialise_spark_session, write_to_database
 
 
 logging = config_logging()
 
 
 def extract_bike_networks(url) -> None:
-
     try:
-        
         response = requests.get(url)
 
         if response.status_code == 200:
@@ -31,7 +32,7 @@ def extract_bike_networks(url) -> None:
 def transform_data(data: dict, spark):
     """ Transform the schema of the data """
     try:
-        all_network_ids = []
+
         all_networks = []
 
         for network in data["networks"]:
@@ -40,35 +41,33 @@ def transform_data(data: dict, spark):
                 network_location = network.get("location", {})
 
                 streaming_data =  {
-                "id": network.get("id"),
-                "name": network.get("name"),
+                "network_id": network.get("id"),
+                "network_name": network.get("name"),
                 "latitude": network_location.get("latitude"),
                 "longitude": network_location.get("longitude"),
                 "city": network_location.get("city"),
                 "country": network_location.get("country"),
-                "company": network.get("company")[0]
+                "company": network["company"][0] if "company" in network and network["company"] else None 
                 }
 
-                all_network_ids.append(network.get("id"))
                 all_networks.append(streaming_data)
-        
-                
                 
         schema = StructType([
-            StructField("id", StringType(), True),
-            StructField("name", StringType(), True),
-            StructField("latitude", FloatType(), True),
-            StructField("longitude", FloatType(), True),
-            StructField("city", StringType(), True),
-            StructField("country", StringType(), True),
-            StructField("company", StringType(), True),
-            ])
-        
-        df = spark.createDataFrame(data, schema=schema)
+                StructField("network_id", StringType(), True),
+                StructField("network_name", StringType(), True),
+                StructField("latitude", FloatType(), True),
+                StructField("longitude", FloatType(), True),
+                StructField("city", StringType(), True),
+                StructField("country", StringType(), True),
+                StructField("company", StringType(), True),
+                ])
+
+
+        df = spark.createDataFrame(all_networks, schema=schema)
 
         logging.info("Data transformed successfully.")
 
-        return df, all_network_ids
+        return df
 
     except Exception as e:
         logging.error(f"Error transforming schema: {e}")
@@ -77,27 +76,39 @@ def transform_data(data: dict, spark):
 
 
 
-    
    
 def network_main():
+    spark = None
     try:
         app_name = "fetchAndConsumeNetworksApi"
         url= "http://api.citybik.es/v2/networks"
         spark = intialise_spark_session(app_name)
         data = extract_bike_networks(url)
+        mode = "overwrite"
+        jdbc_url = ""
+        properties = ""
 
-        df, all_network_ids = transform_data(data, spark)
-        spark.write.csv(all_network_ids, "reference_data/bike_networks.csv", header=True)
+        df = transform_data(data, spark)
+
+        all_network_ids_df = df.select("network_id").distinct()
+
+        all_network_ids_df.coalesce(1).write.mode("overwrite") \
+        .option("header", True) \
+        .option("delimiter", ",")\
+        .option(singleFile=True)\     
+        .csv("/Workspace/Users/khadijabadmus@yahoo.com/city_weather_api/reference_data/")
+        logging.info("Data written to reference_data/")
 
 
         # Write to database
-        write_to_database(df, "dim_bike_networks", "overwrite")
+        write_to_database(jdbc_url, properties, df, "dim_bike_networks", "overwrite")
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
     finally:
-        spark.stop()
-        logging.info("Spark session stopped.")
+        if spark:
+            spark.stop()
+            logging.info("Spark session stopped.")
 
 
 if __name__ == "__main__":
