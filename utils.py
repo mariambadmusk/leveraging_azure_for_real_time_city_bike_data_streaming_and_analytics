@@ -4,26 +4,31 @@ from pyspark.sql.functions import from_json, col
 from azure.eventhub import EventData
 from azure.eventhub.aio import EventHubProducerClient
 import json
+from dotenv import load_dotenv
+import os
+from logging.handlers import RotatingFileHandler
 
-
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 def config_logging():
-    global logger
-
     logger.setLevel(logging.DEBUG)
-    
-    # remove after azure configuration
-    handler = logging.FileHandler("app.log")
 
-    # edit for Azure configuration
-    # handler = logging.StreamHandler()
+    log_file = "app.log"  # Define the log file name
 
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+
+    # Create a RotatingFileHandler directly with the log file name
+    file_handler = RotatingFileHandler(log_file, maxBytes=50*1024*1024)
+    file_handler.setFormatter(formatter)
+
+    # Add the handler to the logger
+    logger.addHandler(file_handler)
 
     return logger
+
+# You should call this function once at the beginning of your script
+config_logging()
 
 
 def intialise_spark_session(app_name):
@@ -61,16 +66,19 @@ async def publish_to_eventhub(connection_str, event_hub_name, data):
                 
 
 
-def read_eventhub_stream(spark, connection_string, schema):
+def read_eventhub_stream(spark, connection_string, event_hub_name, schema):
     try:
         # encrypt Event Hubs configuration
         sc = spark.sparkContext
+        
 
         eh_conf = {
         'eventhubs.connectionString': sc._jvm.org.apache.spark.eventhubs.EventHubsUtils.encrypt(connection_string),
-        'eventhubs.startingPosition': 'latest'
-                }
-        
+        'eventhubs.eventHubsName': event_hub_name,
+        'eventhubs.startingPosition': 'latest',
+        'eventhubs.consumerGroup': '$Default'
+        }
+
         # read from Event Hub
         raw_df = spark.readStream \
             .format("eventhubs") \
@@ -88,9 +96,16 @@ def read_eventhub_stream(spark, connection_string, schema):
 
 
 
-def write_to_database(jdbc_url, properties, df, table_name, mode):
+def write_to_database(df, table_name, mode):
     """ Write DataFrame to Azure PostgreSQL database """
     try:
+        jdbc_url = os.getenv("JDBC_URL")
+        properties = {
+            "user": os.getenv("AZURE_POSTGRESQL_USER"),
+            "password": os.getenv("AZURE_POSTGRESQL_PASSWORD"),
+            "driver": "org.postgresql.Driver"
+        }
+
         df.write.jdbc(
             url = jdbc_url,
             table = table_name,
@@ -105,6 +120,13 @@ def write_to_database(jdbc_url, properties, df, table_name, mode):
 
 def read_from_database(jdbc_url, properties, spark, table_name):
     try:
+        jdbc_url = os.getenv("JDBC_URL")
+        properties = {
+            "user": os.getenv("AZURE_POSTGRESQL_USER"),
+            "password": os.getenv("AZURE_POSTGRESQL_PASSWORD"),
+            "driver": "org.postgresql.Driver"
+        }
+
         df = spark.read.jdbc(
             url=jdbc_url,
             table=table_name,

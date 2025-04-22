@@ -4,11 +4,13 @@ import requests
 import logging
 import sys
 import os
+import pandas as pd
 sys.path.append(os.path.abspath("scripts"))
-from scripts.utils import config_logging, intialise_spark_session, write_to_database
+from utils import config_logging, intialise_spark_session, write_to_database
 
 
 logging = config_logging()
+
 
 
 def extract_bike_networks(url) -> None:
@@ -84,24 +86,19 @@ def network_main():
         url= "http://api.citybik.es/v2/networks"
         spark = intialise_spark_session(app_name)
         data = extract_bike_networks(url)
+        table_name = "dim_bike_networks"
         mode = "overwrite"
-        jdbc_url = ""
-        properties = ""
+
 
         df = transform_data(data, spark)
 
         all_network_ids_df = df.select("network_id").distinct()
+        all_network_ids_df = all_network_ids_df.toPandas()
 
-        all_network_ids_df.coalesce(1).write.mode("overwrite") \
-        .option("header", True) \
-        .option("delimiter", ",")\
-        .option(singleFile=True)\     
-        .csv("/Workspace/Users/khadijabadmus@yahoo.com/city_weather_api/reference_data/")
-        logging.info("Data written to reference_data/")
-
+        all_network_ids_df.to_csv("/Workspace/Users/khadijabadmus@yahoo.com/leveraging_azure_for_real_time_city_bike_data_streaming_and_analytics/reference_data/all_networks_id.csv", index=False)
 
         # Write to database
-        write_to_database(jdbc_url, properties, df, "dim_bike_networks", "overwrite")
+        write_to_database(df, table_name, mode)
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
