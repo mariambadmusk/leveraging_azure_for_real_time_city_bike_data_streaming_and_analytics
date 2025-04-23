@@ -9,7 +9,7 @@ def create_tables():
     """
     logger = config_logging()
     try:
-        db_connection = "postgresql://lily:Seyi2025@city-bike-etl-pipeline.postgres.database.azure.com:5432/bike_networks_monitor"
+        db_connection = os.getenv("SQL_CONN_URL")
         engine = create_engine(db_connection)
 
         sql_path = "/Workspace/Users/khadijabadmus@yahoo.com/city_weather_api/create_tables.sql"

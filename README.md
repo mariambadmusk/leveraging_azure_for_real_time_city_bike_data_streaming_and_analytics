@@ -1,6 +1,3 @@
-<<<<<<< Updated upstream
-# group4
-=======
 # Levergaing Azure For Real-Time City Bike Data Streaming And Analytics
 
 This project implements a **near-real-time data pipeline** that streams, transforms, and analyses city bike station data from the [CityBikes API](https://api.citybik.es/) and [weather api](https://www.weatherapi.com/) using **Azure services**.. It captures detailed station level metrics such as:
@@ -22,6 +19,7 @@ This project implements a **near-real-time data pipeline** that streams, transfo
 
 
 ### Setup
+
+
 ### Contributions
 ### License
->>>>>>> Stashed changes

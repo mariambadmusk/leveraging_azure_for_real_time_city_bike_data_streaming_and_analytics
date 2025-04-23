@@ -14,21 +14,18 @@ logger = logging.getLogger(__name__)
 def config_logging():
     logger.setLevel(logging.DEBUG)
 
-    log_file = "app.log"  # Define the log file name
+    log_file = "app.log"  
 
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-    # Create a RotatingFileHandler directly with the log file name
+    
     file_handler = RotatingFileHandler(log_file, maxBytes=50*1024*1024)
     file_handler.setFormatter(formatter)
 
-    # Add the handler to the logger
     logger.addHandler(file_handler)
 
     return logger
 
-# You should call this function once at the beginning of your script
-config_logging()
 
 
 def intialise_spark_session(app_name):
