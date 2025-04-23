@@ -12,7 +12,7 @@ def get_station_schema():
         StructField("stations", ArrayType(StructType([
             StructField("network_id", StringType(), True),
             StructField("station_id", StringType(), True),
-            StructField("street", StringType(), True),
+            StructField("station_name", StringType(), True),
             StructField("latitude", DoubleType(), True),
             StructField("longitude", DoubleType(), True),
             StructField("last_updated_tz", StringType(), True),
@@ -84,7 +84,7 @@ def flatten_df(df):
         ).select(
             "network_id",
             col("station.id").alias("station_id"),
-            col("street").alias("station_name"),
+            col("station_name").alias("station_name"),
             col("station.latitude").alias("latitude"),
             col("station.longitude").alias("longitude"),
             col("station.free_bikes").alias("free_bikes"),
@@ -115,7 +115,7 @@ def clean_station_data(df):
         df = df.na.drop(subset=["station_id", "latitude", "longitude"])
         df = df.withColumn("last_updated_tz", to_timestamp("last_updated_tz")) \
             .filter(col("latitude").between(lat_min, lat_max) & col("longitude").between(lon_min, lon_max)) \
-            .withColumn("street", trim(col("street"))) \
+            .withColumn("station_name", trim(col("station_name"))) \
             .withColumn("is_renting", col("is_renting").cast("boolean")) \
             .withColumn("is_returning", col("is_returning").cast("boolean")) \
             .withColumn("has_ebikes", col("has_ebikes").cast("boolean"))
@@ -140,7 +140,7 @@ def create_star_schema_tables(station_df):
         dim_station = station_df.select(
         "station_id",
             "network_id",  
-        "street",
+        "station_name",
             "latitude", 
             "longitude", 
             "address",

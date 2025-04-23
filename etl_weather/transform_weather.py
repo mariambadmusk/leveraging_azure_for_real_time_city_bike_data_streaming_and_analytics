@@ -35,10 +35,10 @@ def get_weather_schema():
 def flatten_df(df):
 
     flat_df = df.select(
-    col("location.name").alias("street"),
+    col("location.name").alias("city"),
     col("location.country").alias("country"),
-    col("location.lat").alias("latitude"),
-    col("location.lon").alias("longtitude"),
+    col("location.lat").alias("weather_latitude"),
+    col("location.lon").alias("weather_longtitude"),
     col("location.localtime").alias("localtime"), 
     col("current.last_updated").alias("last_updated_tz"),
     col("current.temp_c").alias("temp_c"),
@@ -63,7 +63,8 @@ def clean_data(df: DataFrame)-> DataFrame:
 
     df = df.withColumn("last_updated", to_timestamp(col("last_updated"), "yyyy-MM-dd HH:mm"))
 
-    fact_weather_df = df.select("street", "country", "timezone", "localtime_tz", "last_updated_tz", "weather_condition", "temp_c", "feelslike_c", "heat_index", "wind_mph", "wind_degree", "wind_dir", "humidity", "cloud")
+    fact_weather_df = df.select("city", "country", "timezone", "localtime_tz", "last_updated_tz", "weather_latitude", "weather_longitude", "weather_condition", "temp_c", "feelslike_c", "heat_index", "wind_mph", "wind_degree", "wind_dir", "humidity", "cloud")
+
 
     return fact_weather_df
 

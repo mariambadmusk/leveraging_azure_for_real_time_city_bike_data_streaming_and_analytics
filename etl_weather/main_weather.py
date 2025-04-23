@@ -1,8 +1,8 @@
 from utils import config_logging, intialise_spark_session, write_to_database, read_eventhub_stream
-from extract_weather import fetch_all_weather
+from extract_weather import get_coordinates, fetch_all_weather
 from transform_weather import get_weather_schema, flatten_df, clean_data
 import asyncio
-import pandas as pd
+import os
 
 def weather_main():
     """ Run the main function for the Weather ETL pipeline"""
@@ -15,17 +15,17 @@ def weather_main():
         app_name = "fetchAndConsumeWeatherApi" 
         mode = "append"      
         weather_schema = get_weather_schema()
-        street_file_path = ""
+        coordinates_file_path = ""
         jdbc_url = ""
         properties = ""
-        api_key = "350f4d977ad24531a8565131251704"
+        api_key = os.getenv("WEATHER_API_KEY")
         if not api_key:
             logger.error("Missing API key for weather data: check your configuration.")
             return
         
         # Set up Event Hub connection string
-        weather_event_hub_connstr = "Endpoint=sb://etl-city-weather-api.servicebus.windows.net/;SharedAccessKeyName=weatherPolicy;SharedAccessKey=f5ElB6cChzXHYAnbPsh3vCJ1Rz6xE42dI+AEhBaRMys=;EntityPath=weather_event_hub"
-        weather_event_hub_name = "weather_event_hub"
+        weather_event_hub_connstr = os.getenv("WEATHER_EVENT_HUB_CONNSTR")
+        weather_event_hub_name = os.getenv("WEATHER_EVENTHUB_NAME")
 
         # Intialise spark session
         spark = intialise_spark_session(app_name)
@@ -35,13 +35,12 @@ def weather_main():
             return
         
         # read csv for weather query parameter
-        street_df = pd.read_csv(street_file_path )
-        street_list  = street_df.squeeze().tolist()
+        coordinates = get_coordinates(coordinates_file_path)
 
         
         # Read network IDs and fetch data from API
         logger.info("Starting to fetch data from Weather API...")
-        asyncio.run(fetch_all_weather(api_key, street_list, weather_event_hub_connstr, weather_event_hub_name))
+        asyncio.run(fetch_all_weather(api_key, coordinates, weather_event_hub_connstr, weather_event_hub_name))
 
         # Read from Kafka topic
         logger.info("Reading from Weather hub...")

@@ -33,10 +33,9 @@ CREATE TABLE IF NOT EXISTS staging_station_status (
 );
 
 CREATE TABLE IF NOT EXISTS dim_bike_stations (
-    station_id VARCHAR(255) PRIMARY KEY,
     network_id VARCHAR(255),
-    street VARCHAR(255),
-    city VARCHAR(255),
+    station_id VARCHAR(255) PRIMARY KEY,
+    station_name VARCHAR(255),
     country VARCHAR(255),
     latitude FLOAT,
     longitude FLOAT,
@@ -65,9 +64,8 @@ CREATE TABLE IF NOT EXISTS fact_stations_status (
 
 
 
-
 CREATE TABLE IF NOT EXISTS fact_weather (
-    street VARCHAR(255) PRIMARY KEY,
+    city VARCHAR(255) PRIMARY KEY,
     localtime_tz TIMESTAMP, 
     last_updated_tz TIMESTAMP,
     weather_condition VARCHAR(255),
@@ -78,6 +76,17 @@ CREATE TABLE IF NOT EXISTS fact_weather (
     wind_degree INTEGER,
     wind_dir VARCHAR(255),
     humidity INTEGER,
-    cloud_condition INTEGER,
-    FOREIGN KEY (city) REFERENCES dim_bike_stations(city)
+    cloud_condition INTEGER
 );
+
+
+-- CREATE TABLE IF NOT EXISTS dim_weather(
+--     station_id VARCHAR(255),
+--     latitude FLOAT,
+--     longitude FLOAT,
+--     city VARCHAR(255) PRIMARY KEY,
+--     weather_latitude FLOAT,
+--     weather_longitude FLOAT, 
+--     FOREIGN KEY (city) REFERENCES fact_weather(city)
+-- );
+
