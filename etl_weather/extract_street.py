@@ -2,8 +2,6 @@ from utils import config_logging, intialise_spark_session, read_from_database
 
 
 
-
-
 def extract_unique_streets():
     """
     Extract distinct street names from database using PySpark and save as CSV.

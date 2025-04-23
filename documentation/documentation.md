@@ -1,3 +1,10 @@
+# Revision History
+
+| Version |       Author       |     Date     |                         Description                       |
+| ------- | ------------------ | ------------ | --------------------------------------------------------- |
+|   1.0   |   Mariam Badmus    |  12-04-2025  |     Updated the project section                           |
+|   2.0   |   Mariam Badmus    |  17-04-2025  | Updated project goals & part of the data ifecyce overiew  |
+
 # Leveraging Azure For Real Time City Bike Data Streaming And Analytics
 
   #### Project Goals
